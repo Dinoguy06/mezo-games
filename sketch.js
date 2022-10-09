@@ -1,59 +1,117 @@
 const Engine = Matter.Engine;
+const Render = Matter.Render;
 const World = Matter.World;
 const Bodies = Matter.Bodies;
 const Constraint = Matter.Constraint;
+const Body = Matter.Body;
+const Composites = Matter.Composites;
+const Composite = Matter.Composite;
 
-var engine, world;
-var canvas;
-var player, playerBase, playerArcher;
-var baseimage;
+let engine;
+let world;
+var ground, bridge;
+var leftWall, rightWall;
+var jointPoint;
+var jointLink;
+var zombie;
+var zombie1, zombie2, zombie3, zombie4;
+var breakButton;
+var backgroundImage;
+
+var stones = [];
 
 function preload() {
-  backgroundImg = loadImage("./assets/background.png");
-  baseimage = loadImage("./assets/base.png");
-  playerimage = loadImage("./assets/player.png");
+  zombie1 = loadImage("./assets/zombie1.png");
+  zombie2 = loadImage("./assets/zombie2.png");
+
+  zombie3 = loadImage("./assets/zombie3.png");
+  zombie4 = loadImage("./assets/zombie4.png");
+
+  backgroundImage = loadImage("./assets/background.png");
 }
 
 function setup() {
-  canvas = createCanvas(windowWidth, windowHeight);
-
+  createCanvas(windowWidth, windowHeight);
   engine = Engine.create();
   world = engine.world;
-  angleMode(DEGREES);
+  frameRate(80);
 
-  var options = {
-    isStatic: true
-  };
+  ground = new Base(0, height - 10, width * 2, 20);
+  leftWall = new Base(100, height - 300, 200, height / 2 + 100);
+  rightWall = new Base(width - 100, height - 300, 200, height / 2 + 100);
 
-  playerBase = Bodies.rectangle(200, 350, 180, 150, options);
-  World.add(world, playerBase);
+  bridge = new Bridge(30, { x: 50, y: height / 2 - 140 });
+  jointPoint = new Base(width - 250, height / 2 - 100, 40, 20);
 
-  player = Bodies.rectangle(250, playerBase.position.y - 160, 50, 180, options);
-  World.add(world,player)
+  Matter.Composite.add(bridge.body, jointPoint);
+  jointLink = new Link(bridge, jointPoint);
 
- // playerArcher = new ( 340, playerBase.position.y - 112, 120, 120);
-  playerArcher = new PlayerArcher( 340, playerBase.position.y - 112, 120, 120);
- // playerArcher =  PlayerArcher( 340, playerBase.position.y - 112, 120, 120);
- // playerArcher = new PlayerArcher( );
+  for (var i = 0; i <= 8; i++) {
+    var x = random(width / 2 - 200, width / 2 + 300);
+    var y = random(-100, 100);
+    var stone = new Stone(x, y, 80, 80);
+    stones.push(stone);
+  }
+
+  zombie = createSprite(width / 2, height - 110);
+  zombie.addAnimation("lefttoright", zombie1, zombie2, zombie1);
+  zombie.addAnimation("righttoleft", zombie3, zombie4, zombie3);
+  zombie.scale = 0.1;
+  zombie.velocityX = 10;
+
+  breakButton = createButton("");
+  breakButton.position(width - 200, height / 2 - 50);
+  breakButton.class("breakbutton");
+
+  breakButton.mouseClicked(handleButtonPress);
+  //breakButton.mousePressed(handleButtonPress);
+  //breakButton.mouse(handleButtonPress);
+  //breakButton.mousePressed(ButtonPress);
+
 
 }
 
 function draw() {
-  background(backgroundImg);
-  image(baseimage,playerBase.position.x,playerBase.position.y,180,150)
-  image(playerimage,player.position.x,player.position.y,50,180)
-
+  background(backgroundImage);
   Engine.update(engine);
 
+  bridge.show();
 
-  // playerArcher.display;
-  // playerArcherdisplay();
-  playerArcher.display();
-  // display();
+  for (var stone of stones) {
+    stone.show();
+  }
 
-  // Title
-  fill("#FFFF");
-  textAlign("center");
-  textSize(40);
-  text("EPIC ARCHERY", width / 2, 100);
+  if (zombie.position.x >= width - 300) {
+    zombie.velocityX = -10;
+    zombie.changeAnimation("righttoleft");
+  }
+
+  if (zombie.position.x <= 300) {
+    zombie.velocityX = 10;
+    zombie.changeAnimation("lefttoright");
+  }
+
+  drawSprites();
+}
+
+function handleButtonPress() {
+  /* jointLink=dettach();
+  setTimeout(() => {
+    bridge.break();
+  }, 1500); */
+
+  /* jointLink.dettach();
+  setTimeout(() => {
+    break();
+  }, 1500); */
+
+  /* jointLink.dettach();
+  setTimeout(() => {
+    bridge.break();
+  }, 5); */
+
+   jointLink.dettach();
+  setTimeout(() => {
+    bridge.break();
+  }, 1500); 
 }
