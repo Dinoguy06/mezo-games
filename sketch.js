@@ -9,126 +9,142 @@ const Composite = Matter.Composite;
 
 let engine;
 let world;
-var ground, bridge;
-var leftWall, rightWall;
-var jointPoint;
-var jointLink;
-var zombie1, zombie2, zombie3, zombie4, sadzombie;
-var breakButton;
-var backgroundImage;
+var rope,fruit,ground;
+var fruit_con;
+var fruit_con_2;
 
-var stones = [];
-var collided = false;
-function preload() {
-  zombie1 = loadImage("./assets/zombie1.png");
-  zombie2 = loadImage("./assets/zombie2.png");
+var bg_img;
+var food;
+var rabbit;
+var blower;
 
-  zombie3 = loadImage("./assets/zombie3.png");
-  zombie4 = loadImage("./assets/zombie4.png");
-  sadzombie = loadImage("./assets/sad_zombie.png");
+var button;
+var bunny;
+var blink,eat,sad;
+var background_sound, cut_sound, sad_sound, eating_sound, air_sound;
 
-  backgroundImage = loadImage("./assets/background.png");
+function preload()
+{
+  bg_img = loadImage('background.png');
+  food = loadImage('melon.png');
+  rabbit = loadImage('Rabbit-01.png');
+  
+  blink = loadAnimation("blink_1.png","blink_2.png","blink_3.png");
+  eat = loadAnimation("eat_0.png" , "eat_1.png","eat_2.png","eat_3.png","eat_4.png");
+  sad = loadAnimation("sad_1.png","sad_2.png","sad_3.png");
+  
+  background_sound = loadSound("sound1.mp3")
+  cut_sound = loadSound("rope_cut.mp3")
+  sad_sound = loadSound("sad.wav")
+  eating_sound = loadSound("eating_sound.mp3")
+  air_sound = loadSound("air.wav")
+
+
+  blink.playing = true;
+  eat.playing = true;
+  sad.playing = true;
+  sad.looping= false;
+  eat.looping = false; 
 }
 
 function setup() {
-  createCanvas(windowWidth, windowHeight);
-  engine = Engine.create();
-  world = engine.world;
+  createCanvas(500,700);
   frameRate(80);
 
-  ground = new Base(0, height - 10, width * 2, 20);
-  leftWall = new Base(100, height - 300, 200, height / 2 + 100);
-  rightWall = new Base(width - 100, height - 300, 200, height / 2 + 100);
+  engine = Engine.create();
+  world = engine.world;
+  
+  blower = createImg("blower.png");
+  blower.position(10,250);
+  blower.size(100,100);
+  blower.mouseClicked(airblow);
+  
+  button = createImg('cut_btn.png');
+  button.position(220,30);
+  button.size(50,50);
+  button.mouseClicked(drop);
+  
+  rope = new Rope(7,{x:245,y:30});
+  ground = new Ground(200,690,600,20);
 
-  bridge = new Bridge(30, { x: 50, y: height / 2 - 140 });
-  jointPoint = new Base(width - 250, height / 2 - 100, 40, 20);
+  blink.frameDelay = 20;
+  eat.frameDelay = 20;
+  sad.frameDelay = 20;
 
-  Matter.Composite.add(bridge.body, jointPoint);
-  jointLink = new Link(bridge, jointPoint);
+  bunny = createSprite(230,620,100,100);
+  bunny.scale = 0.2;
 
-  for (var i = 0; i <= 8; i++) {
-    var x = random(width / 2 - 200, width / 2 + 300);
-    var y = random(-100, 100);
-    var stone = new Stone(x, y, 80, 80);
-    stones.push(stone);
-  }
+  bunny.addAnimation('blinking',blink);
 
-  zombie = createSprite(width / 2, height - 100, 50, 50);
-  zombie.addAnimation("lefttoright", zombie1, zombie2, zombie1);
-  zombie.addAnimation("righttoleft", zombie3, zombie4, zombie3);
-  zombie.addImage("sad", sadzombie);
+  bunny.addAnimation('eating',eat);
+  bunny.addAnimation('crying',sad);
+  bunny.changeAnimation('blinking');
+  
+  fruit = Bodies.circle(300,300,20);
+  Matter.Composite.add(rope.body,fruit);
 
-  zombie.scale = 0.1;
-  zombie.velocityX = 10;
+  fruit_con = new Link(rope,fruit);
 
-  breakButton = createButton("");
-  breakButton.position(width - 200, height / 2 - 50);
-  breakButton.class("breakbutton");
-  breakButton.mousePressed(handleButtonPress);
+  rectMode(CENTER);
+  ellipseMode(RADIUS);
+  imageMode(CENTER);
+  
 }
 
-function draw() {
-  background(backgroundImage);
+function draw() 
+{
+  background(51);
+  image(bg_img,width/2,height/2,490,690);
+
+  if(fruit!=null){
+    image(food,fruit.position.x,fruit.position.y,70,70);
+  }
+
+  rope.show();
   Engine.update(engine);
+  ground.show();
 
-  bridge.show();
-
-  for (var stone of stones) {
-    stone.show();
-    var pos = stone.body.position;
-    
-    var distance = dist(zombie.position.x, zombie.position.y, pos.x, pos.y);
-    //var distance = dist(zombie.position.x, zombie.position.y);
-    //var distance = dist(pos.x, pos.y);
-    //var distance = dist(zombie, pos);
-
-
-    /*if (distance >= 50) {
-      zombie.velocityX = 0;
-      Matter.Body.setVelocity(stone.body, { x: 10, y: -10 });
-      zombie.changeImage("sad");
-      collided = true;
-    }*/
-
-    /*if (distance <= 50) {
-      zombie.velocityX = 0;
-      Matter.Body.setVelocity(stone.body, { x: 10, y: -10 });
-      zombie.Image("sad");
-      collided = true;
-    }*/
-
-    if (distance <= 50) {
-      zombie.velocityX = 0;
-      Matter.Body.setVelocity(stone.body, { x: 10, y: -10 });
-      zombie.changeImage("sad");
-      collided = true;
-    }
-
-    /*if (distance <= 50) {
-      zombie.velocityX = 0;
-      Matter.Body.Velocity(stone.body, { x: 10, y: -10 });
-      zombie.changeImage("sad");
-      collided = true;
-    }*/
-
+  if(collide(fruit,bunny)==true)
+  {
+    bunny.changeAnimation('eating');
   }
+   
+  if(collide(fruit,ground.body)==true )
+  {
+     bunny.changeAnimation('crying');
+   }
 
-  if (zombie.position.x >= width - 300 && !collided) {
-    zombie.velocityX = -10;
-    zombie.changeAnimation("righttoleft");
-  }
-
-  if (zombie.position.x <= 300 && !collided) {
-    zombie.velocityX = 10;
-    zombie.changeAnimation("lefttoright");
-  }
-
-  drawSprites();
+   drawSprites();
 }
 
-function handleButtonPress() {
-  jointLink.dettach();
-  setTimeout(() => {
-    bridge.break();
-  }, 1500);
+
+
+function drop()
+{
+  rope.break();
+  fruit_con.dettach();
+  fruit_con = null; 
+}
+
+function collide(body,sprite)
+{
+  if(body!=null)
+        {
+         var d = dist(body.position.x,body.position.y,sprite.position.x,sprite.position.y);
+          if(d<=80)
+            {
+              World.remove(engine.world,fruit);
+               fruit = null;
+               return true; 
+            }
+            else{
+              return false;
+            }
+         }
+}
+
+
+function airblow() {
+  Matter.Body.applyForce(fruit, {x:0,y:0}, {x:0.01,y:0});
+  air_sound.play()
 }
